@@ -73,6 +73,9 @@ machine_config() {
         path=/home/ubuntu/.Xauthority \
         source=${XAUTHORITY}
 
+    echo "export DISPLAY=:0" | \
+        lxc_exec sudo --login --user ubuntu tee -a /home/ubuntu/.profile
+
     message "adding GPU"
     lxc config device add $MACHINE mygpu gpu
     lxc config device set $MACHINE mygpu uid 100
@@ -88,6 +91,7 @@ machine_config() {
         path=/home/ubuntu/.config/pulse/cookie \
         source=/home/${USER}/.config/pulse/cookie
 
+    lxc restart $MACHINE
 }
 
 lxc_exec() {
