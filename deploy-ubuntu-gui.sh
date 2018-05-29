@@ -46,7 +46,7 @@ lxc_init() {
     title "LXC part started"
     message "Fetching image first"
     #lxc launch images:ubuntu/bionic/amd64 $MACHINE
-    lxc launch ubuntu:x $MACHINE
+    lxc launch ubuntu:b $MACHINE
 
     sleep 5
     message "LXC part comepleted"
