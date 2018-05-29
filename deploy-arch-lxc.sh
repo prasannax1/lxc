@@ -73,12 +73,16 @@ machine_config() {
     message "creating user"
     lxc_exec useradd -m -g users -G wheel -s /usr/bin/bash $user
 
+    message "fetching prompt"
+    lxc_sudo git clone https://github.com/prasannax1/config.git
+    lxc_sudo cp /home/$user/config/.*rc /home/$user -v
+
     #message "Set password for user"
     #lxc_exec passwd $user
 
-    message "starting openssh"
-    lxc_exec systemctl enable sshd.socket
-    lxc_exec systemctl start sshd.socket
+    #message "starting openssh"
+    #lxc_exec systemctl enable sshd.socket
+    #lxc_exec systemctl start sshd.socket
 
     message "configuring machine done"
 }
@@ -86,6 +90,11 @@ machine_config() {
 lxc_exec() {
     debug "Running $@"
     lxc exec $MACHINE -- "$@"
+}
+
+lxc_sudo() {
+    debug "running $@"
+    lxc exec $MACHINE -- sudo --login --user $user "$@"
 }
 
 host_config() {
@@ -112,12 +121,8 @@ EOF
 init() {
     DEBUG=1
     MACHINE=$1
-    if [ $USER = prasanna ]; then
-        user=pras
-    else
-        user=$USER
-    fi
-    APPS=(sudo openssh vim git tmux)
+    user=pras
+    APPS=(sudo vim git)
 }
 
 main() {
