@@ -48,6 +48,7 @@ lxc_init() {
     #lxc launch images:ubuntu/bionic/amd64 $MACHINE
     lxc launch ubuntu:x $MACHINE
 
+    sleep 5
     message "LXC part comepleted"
     lxc_show
 }
@@ -59,15 +60,16 @@ lxc_show() {
 machine_config() {
     title "configuring machine"
 
-    message "restarting machine once"
-    lxc restart $MACHINE
-
     message "installing packages"
     lxc_exec apt update
+    lxc_exec apt upgrade -y
     lxc_exec apt install -y mesa-utils alsa-utils x11-apps git
 
     message "mapping UID"
     lxc config set $MACHINE raw.idmap "both $UID 1000"
+
+    message "restarting machine once"
+    lxc restart $MACHINE
 
     message "Configuring sudo" 
     lxc_exec sed -i '/^%sudo/ s/ALL$/NOPASSWD: ALL/' /etc/sudoers
@@ -100,7 +102,7 @@ machine_config() {
 
     message "getting prompt from github"
     lxc_sudo git clone https://github.com/prasannax1/config.git
-    lxc_sudo cp /hom/ubuntu/config/.*rc /home/ubuntu -v
+    lxc_sudo cp /home/ubuntu/config/.*rc /home/ubuntu -v
 
     message "restarting again"
     lxc restart $MACHINE
@@ -113,13 +115,13 @@ lxc_exec() {
 
 lxc_sudo() {
     debug "running $@"
-    lxc exec $MACHINE -- sudo --login --user $user "$@"
+    lxc exec $MACHINE -- sudo --login --user $USER "$@"
 }
 
 init() {
     DEBUG=1
     MACHINE=$1
-    user=ubuntu
+    USER=ubuntu
 }
 
 main() {
