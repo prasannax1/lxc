@@ -45,7 +45,8 @@ debug() {
 lxc_init() {
     title "LXC part started"
     message "Fetching image first"
-    lxc launch images:ubuntu/bionic/amd64 $MACHINE
+    #lxc launch images:ubuntu/bionic/amd64 $MACHINE
+    lxc launch ubuntu:x $MACHINE
 
     message "LXC part comepleted"
     lxc_show
@@ -58,12 +59,18 @@ lxc_show() {
 machine_config() {
     title "configuring machine"
 
+    message "restarting machine once"
+    lxc restart $MACHINE
+
     message "installing packages"
     lxc_exec apt update
-    lxc_exec apt install -y mesa-utils alsa-utils x11-apps
+    lxc_exec apt install -y mesa-utils alsa-utils x11-apps git
 
     message "mapping UID"
     lxc config set $MACHINE raw.idmap "both $UID 1000"
+
+    message "Configuring sudo" 
+    lxc_exec sed -i '/^%sudo/ s/ALL$/NOPASSWD: ALL/' /etc/sudoers
 
     message "adding X related files"
     lxc config device add $MACHINE X0 disk \
@@ -74,7 +81,7 @@ machine_config() {
         source=${XAUTHORITY}
 
     echo "export DISPLAY=:0" | \
-        lxc_exec sudo --login --user ubuntu tee -a /home/ubuntu/.profile
+        lxc_sudo tee -a /home/ubuntu/.profile
 
     message "adding GPU"
     lxc config device add $MACHINE mygpu gpu
@@ -86,11 +93,16 @@ machine_config() {
     echo export PULSE_SERVER=\"tcp:\`ip route show 0/0 | awk \'{print \$3}\'\`\" >> ~/.profile
     mkdir -p ~/.config/pulse/
     echo export PULSE_COOKIE=/home/ubuntu/.config/pulse/cookie >> ~/.profile
-    " | lxc exec $MACHINE -- sudo --login --user ubuntu
+    " | lxc_sudo
     lxc config device add $MACHINE PACookie disk \
         path=/home/ubuntu/.config/pulse/cookie \
         source=/home/${USER}/.config/pulse/cookie
 
+    message "getting prompt from github"
+    lxc_sudo git clone https://github.com/prasannax1/config.git
+    lxc_sudo cp /hom/ubuntu/config/.*rc /home/ubuntu -v
+
+    message "restarting again"
     lxc restart $MACHINE
 }
 
@@ -99,9 +111,15 @@ lxc_exec() {
     lxc exec $MACHINE -- "$@"
 }
 
+lxc_sudo() {
+    debug "running $@"
+    lxc exec $MACHINE -- sudo --login --user $user "$@"
+}
+
 init() {
     DEBUG=1
     MACHINE=$1
+    user=ubuntu
 }
 
 main() {
